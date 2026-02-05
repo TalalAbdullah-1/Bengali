@@ -1,0 +1,846 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Exam Prep: Partition of Bengal (1905-1911)</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@300;400;500;600;700&family=Merriweather:ital,wght@0,300;0,400;0,700;1,300&display=swap" rel="stylesheet">
+
+    <!-- Source: Bengal Partition Assignment.pdf -->
+    
+    <style>
+        body {
+            font-family: 'Poppins', sans-serif;
+            background-color: #F3F4F6; /* Gray-100 */
+            color: #1F2937; /* Gray-800 */
+            scroll-behavior: smooth;
+        }
+        h1, h2, h3, h4 {
+            font-family: 'Merriweather', serif;
+        }
+        
+        /* Chart Container Styling */
+        .chart-container {
+            position: relative;
+            width: 100%;
+            max-width: 600px;
+            margin-left: auto;
+            margin-right: auto;
+            height: 300px;
+            max-height: 400px;
+        }
+
+        /* Flashcard Styling */
+        .flashcard-container {
+            perspective: 1000px;
+        }
+        .flashcard {
+            transition: transform 0.6s;
+            transform-style: preserve-3d;
+            cursor: pointer;
+            position: relative;
+            height: 220px;
+        }
+        .flashcard.flipped {
+            transform: rotateY(180deg);
+        }
+        .flashcard-front, .flashcard-back {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            backface-visibility: hidden;
+            border-radius: 1rem;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-direction: column;
+            padding: 1.5rem;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+        }
+        .flashcard-front {
+            background-color: white;
+            border: 2px solid #E5E7EB;
+        }
+        .flashcard-back {
+            background-color: #EFF6FF; /* Blue-50 */
+            border: 2px solid #3B82F6;
+            transform: rotateY(180deg);
+            text-align: center;
+        }
+
+        /* Quiz Styles */
+        .quiz-option:hover {
+            background-color: #F3F4F6;
+        }
+        .quiz-option.selected {
+            background-color: #DBEAFE;
+            border-color: #3B82F6;
+        }
+        .quiz-option.correct {
+            background-color: #D1FAE5;
+            border-color: #10B981;
+            color: #065F46;
+        }
+        .quiz-option.wrong {
+            background-color: #FEE2E2;
+            border-color: #EF4444;
+            color: #991B1B;
+        }
+
+        /* Sticky Nav Active State */
+        .nav-link.active {
+            color: #F97316;
+            border-bottom: 2px solid #F97316;
+        }
+        
+        .tab-btn.active {
+            background-color: #EEF2FF; /* Indigo-50 */
+            color: #4338CA; /* Indigo-700 */
+            border-bottom: 4px solid #4338CA;
+        }
+        .tab-content {
+            display: none;
+            animation: fadeIn 0.4s ease-in-out;
+        }
+        .tab-content.active {
+            display: block;
+        }
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Chat Widget Styles */
+        .chat-widget {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            z-index: 100;
+            width: 350px;
+            max-width: 90vw;
+            background: white;
+            border-radius: 1rem;
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            border: 1px solid #E5E7EB;
+            transform: translateY(120%);
+            transition: transform 0.3s ease-in-out;
+        }
+        .chat-widget.open {
+            transform: translateY(0);
+        }
+        .chat-toggle {
+            position: fixed;
+            bottom: 2rem;
+            right: 2rem;
+            z-index: 101;
+            width: 3.5rem;
+            height: 3.5rem;
+            border-radius: 50%;
+            background: #4F46E5;
+            color: white;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+            transition: transform 0.2s;
+        }
+        .chat-toggle:hover {
+            transform: scale(1.1);
+        }
+        .chat-messages {
+            height: 300px;
+            overflow-y: auto;
+            padding: 1rem;
+            background-color: #F9FAFB;
+        }
+        .message {
+            margin-bottom: 0.75rem;
+            max-width: 85%;
+            padding: 0.5rem 0.75rem;
+            border-radius: 0.5rem;
+            font-size: 0.875rem;
+            line-height: 1.25;
+        }
+        .message.user {
+            background-color: #4F46E5;
+            color: white;
+            align-self: flex-end;
+            margin-left: auto;
+        }
+        .message.ai {
+            background-color: #E5E7EB;
+            color: #1F2937;
+            align-self: flex-start;
+        }
+        .typing-indicator {
+            display: inline-block;
+            width: 4px;
+            height: 4px;
+            background-color: #6B7280;
+            border-radius: 50%;
+            animation: bounce 1s infinite;
+            margin: 0 2px;
+        }
+        .typing-indicator:nth-child(2) { animation-delay: 0.2s; }
+        .typing-indicator:nth-child(3) { animation-delay: 0.4s; }
+        @keyframes bounce {
+            0%, 100% { transform: translateY(0); }
+            50% { transform: translateY(-4px); }
+        }
+
+        /* Modal Styles */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 200;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            overflow: auto;
+            background-color: rgba(0,0,0,0.5);
+            align-items: center;
+            justify-content: center;
+        }
+        .modal.show {
+            display: flex;
+        }
+        .modal-content {
+            background-color: #fefefe;
+            margin: auto;
+            padding: 20px;
+            border: 1px solid #888;
+            width: 90%;
+            max-width: 500px;
+            border-radius: 0.75rem;
+            box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+
+    <!-- Sticky Navigation -->
+    <nav class="bg-white shadow-md sticky top-0 z-50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex justify-between h-16">
+                <div class="flex items-center">
+                    <span class="text-2xl font-bold text-indigo-900">History<span class="text-orange-500">Prep</span></span>
+                    <span class="ml-2 text-xs bg-indigo-100 text-indigo-800 px-2 py-0.5 rounded-full font-semibold hidden md:inline-block">Bengal Partition</span>
+                </div>
+                <div class="flex items-center space-x-4">
+                    <div class="hidden md:flex space-x-6 items-center">
+                        <a href="#intro" class="nav-link text-gray-600 hover:text-indigo-600 px-1 py-2 text-sm font-medium transition">Overview</a>
+                        <a href="#provinces" class="nav-link text-gray-600 hover:text-indigo-600 px-1 py-2 text-sm font-medium transition">The Split</a>
+                        <a href="#motives" class="nav-link text-gray-600 hover:text-indigo-600 px-1 py-2 text-sm font-medium transition">Motives</a>
+                        <a href="#impact" class="nav-link text-gray-600 hover:text-indigo-600 px-1 py-2 text-sm font-medium transition">Impact</a>
+                        <a href="#annulment" class="nav-link text-gray-600 hover:text-indigo-600 px-1 py-2 text-sm font-medium transition">Annulment</a>
+                        <a href="#quiz" class="bg-indigo-600 text-white px-4 py-2 rounded-lg text-sm font-medium hover:bg-indigo-700 transition">Take Quiz</a>
+                    </div>
+                    <!-- Settings Button -->
+                    <button onclick="openSettings()" class="text-gray-500 hover:text-indigo-600 p-2 rounded-full transition" title="API Settings">
+                        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z" />
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                        </svg>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </nav>
+
+    <!-- Hero Section -->
+    <header id="intro" class="bg-white pb-12 pt-16 border-b border-gray-200">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+            <div class="inline-block px-3 py-1 mb-4 text-xs font-semibold tracking-wider text-indigo-900 uppercase bg-indigo-100 rounded-full">
+                Indian History Assignment
+            </div>
+            <h1 class="text-4xl md:text-5xl font-black text-gray-900 mb-6 leading-tight">
+                The Partition of Bengal
+            </h1>
+            <p class="text-xl text-gray-600 max-w-2xl mx-auto mb-8">
+                From Lord Curzon's controversial decision in 1905 to the eventual Annulment in 1911. A turning point that birthed mass nationalism.
+            </p>
+            
+            <!-- Quick Facts Grid from PDF -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 max-w-4xl mx-auto">
+                <div class="bg-orange-50 p-4 rounded-xl border border-orange-100">
+                    <div class="text-xs font-bold text-orange-600 uppercase">Announced</div>
+                    <div class="font-bold text-gray-800 text-lg">July 20, 1905</div>
+                </div>
+                <div class="bg-indigo-50 p-4 rounded-xl border border-indigo-100">
+                    <div class="text-xs font-bold text-indigo-600 uppercase">Enforced</div>
+                    <div class="font-bold text-gray-800 text-lg">Oct 16, 1905</div>
+                </div>
+                <div class="bg-red-50 p-4 rounded-xl border border-red-100">
+                    <div class="text-xs font-bold text-red-600 uppercase">Viceroy</div>
+                    <div class="font-bold text-gray-800 text-lg">Lord Curzon</div>
+                </div>
+                <div class="bg-green-50 p-4 rounded-xl border border-green-100">
+                    <div class="text-xs font-bold text-green-600 uppercase">Annulled</div>
+                    <div class="font-bold text-gray-800 text-lg">Dec 12, 1911</div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-5xl mx-auto px-4 py-12 space-y-20">
+
+        <!-- Module 1: The Geography (Provinces) -->
+        <section id="provinces" class="scroll-mt-24">
+            <div class="flex items-center mb-6">
+                <span class="bg-indigo-100 text-indigo-800 text-sm font-bold px-3 py-1 rounded-full mr-3">Module 1</span>
+                <h2 class="text-3xl font-bold text-gray-900">The Geographical Split</h2>
+            </div>
+            
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden p-8">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+                    <div>
+                        <h3 class="text-xl font-bold text-gray-900 mb-4">Total Population: ~78 Million</h3>
+                        <p class="text-gray-600 mb-6">
+                            Bengal was huge (size of France). The plan divided it into two distinct provinces:
+                        </p>
+                        <div class="space-y-4">
+                            <div class="p-4 bg-orange-50 border-l-4 border-orange-500 rounded">
+                                <h4 class="font-bold text-orange-900">1. West Bengal</h4>
+                                <ul class="text-sm text-gray-700 list-disc list-inside mt-2">
+                                    <li><strong>Capital:</strong> Calcutta</li>
+                                    <li><strong>Population:</strong> ~54 Million</li>
+                                    <li><strong>Demographics:</strong> Hindu Majority, but included Hindi & Odia speakers (making Bengalis a linguistic minority).</li>
+                                </ul>
+                            </div>
+                            <div class="p-4 bg-green-50 border-l-4 border-green-500 rounded">
+                                <h4 class="font-bold text-green-900">2. Eastern Bengal & Assam</h4>
+                                <ul class="text-sm text-gray-700 list-disc list-inside mt-2">
+                                    <li><strong>Capital:</strong> Dhaka</li>
+                                    <li><strong>Population:</strong> ~31 Million</li>
+                                    <li><strong>Demographics:</strong> Muslim Majority (18M Muslims vs 12M Hindus).</li>
+                                </ul>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Visualization -->
+                    <div>
+                        <h4 class="text-sm font-bold text-center text-gray-500 uppercase mb-4">Population Distribution (Millions)</h4>
+                        <div class="chart-container">
+                            <canvas id="provinceChart"></canvas>
+                        </div>
+                        <p class="text-xs text-center text-gray-400 mt-2">Data Source: Assignment PDF</p>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Module 2: The Motives (Interactive) -->
+        <section id="motives" class="scroll-mt-24">
+            <div class="flex items-center mb-6">
+                <span class="bg-indigo-100 text-indigo-800 text-sm font-bold px-3 py-1 rounded-full mr-3">Module 2</span>
+                <h2 class="text-3xl font-bold text-gray-900">Why Divide Bengal?</h2>
+            </div>
+
+            <div class="bg-white rounded-2xl shadow-sm border border-gray-200 overflow-hidden">
+                <div class="flex border-b border-gray-200">
+                    <button onclick="switchTab('official')" id="btn-official" class="tab-btn active flex-1 py-4 text-center font-bold text-lg text-gray-500 transition">
+                        🏛️ Official Reasons
+                    </button>
+                    <button onclick="switchTab('real')" id="btn-real" class="tab-btn flex-1 py-4 text-center font-bold text-lg text-gray-500 transition">
+                        👁️ Real Motives
+                    </button>
+                </div>
+
+                <div class="p-8 min-h-[300px]">
+                    <!-- Official Reason Content -->
+                    <div id="tab-official" class="tab-content active">
+                        <h3 class="text-2xl font-bold text-indigo-900 mb-4">"Administrative Efficiency"</h3>
+                        <ul class="space-y-4 text-gray-700">
+                            <li class="flex items-start">
+                                <span class="mr-2 mt-1">✅</span>
+                                <div>
+                                    <strong>Too Big to Manage:</strong> 78 million people was too much for one center.
+                                </div>
+                            </li>
+                            <li class="flex items-start">
+                                <span class="mr-2 mt-1">📈</span>
+                                <div>
+                                    <strong>Economic Development:</strong> Focus on neglected eastern regions (Port of Chittagong).
+                                </div>
+                            </li>
+                            <li class="flex items-start">
+                                <span class="mr-2 mt-1">🎓</span>
+                                <div>
+                                    <strong>Better Governance:</strong> Promises of a new University in Dhaka.
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+
+                    <!-- Real Motive Content -->
+                    <div id="tab-real" class="tab-content">
+                        <h3 class="text-2xl font-bold text-orange-700 mb-4">"Divide and Rule"</h3>
+                        <p class="mb-4 text-gray-600 italic">"Bengal united is a power; Bengal divided will pull in several different ways."</p>
+                        <ul class="space-y-4 text-gray-700">
+                            <li class="flex items-start">
+                                <span class="mr-2 mt-1">🚫</span>
+                                <div>
+                                    <strong>Dethrone Calcutta:</strong> Weaken the nerve center of nationalist activity.
+                                </div>
+                            </li>
+                            <li class="flex items-start">
+                                <span class="mr-2 mt-1">⚔️</span>
+                                <div>
+                                    <strong>Create Divisions:</strong> Split Hindus and Muslims to prevent unified resistance.
+                                </div>
+                            </li>
+                            <li class="flex items-start">
+                                <span class="mr-2 mt-1">🗣️</span>
+                                <div>
+                                    <strong>Linguistic Minority:</strong> Make Bengalis a minority in their own province by including Hindi/Odia speakers.
+                                </div>
+                            </li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Module 3: Reactions & Impact -->
+        <section id="impact" class="scroll-mt-24">
+            <div class="flex items-center mb-6">
+                <span class="bg-indigo-100 text-indigo-800 text-sm font-bold px-3 py-1 rounded-full mr-3">Module 3</span>
+                <h2 class="text-3xl font-bold text-gray-900">Reactions & Consequences</h2>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+                <!-- Swadeshi Card -->
+                <div class="bg-white p-6 rounded-xl shadow-sm border-l-8 border-orange-500">
+                    <div class="text-3xl mb-3">🔥</div>
+                    <h3 class="font-bold text-xl text-gray-900">Birth of Swadeshi</h3>
+                    <p class="text-sm text-gray-600 mt-2">
+                        Moved from petitions to <strong>Direct Action</strong>.
+                    </p>
+                    <ul class="mt-4 space-y-2 text-sm text-gray-700">
+                        <li>• <strong>Boycott:</strong> Burning British textiles (Manchester cloth).</li>
+                        <li>• <strong>Indigenous Industry:</strong> Wearing Khadi, supporting local artisans.</li>
+                        <li>• <strong>Cultural:</strong> Tagore wrote <em>"Amar Sonar Bangla"</em>.</li>
+                    </ul>
+                </div>
+
+                <!-- Political Shift Card -->
+                <div class="bg-white p-6 rounded-xl shadow-sm border-l-8 border-red-600">
+                    <div class="text-3xl mb-3">✊</div>
+                    <h3 class="font-bold text-xl text-gray-900">Rise of Extremism</h3>
+                    <p class="text-sm text-gray-600 mt-2">
+                        Failure of Moderates led to the rise of the "Extremist" trio.
+                    </p>
+                    <div class="mt-4 bg-red-50 p-3 rounded text-center">
+                        <span class="block text-xs font-bold text-red-400 uppercase">Mnemonic</span>
+                        <span class="text-lg font-black text-red-800">LAL - BAL - PAL</span>
+                        <span class="block text-xs text-red-600">(Lajpat Rai, Tilak, B.C. Pal)</span>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- Module 4: The Annulment (1911) -->
+        <section id="annulment" class="scroll-mt-24">
+            <div class="flex items-center mb-6">
+                <span class="bg-indigo-100 text-indigo-800 text-sm font-bold px-3 py-1 rounded-full mr-3">Module 4</span>
+                <h2 class="text-3xl font-bold text-gray-900">The Annulment (1911)</h2>
+            </div>
+
+            <div class="bg-indigo-900 text-white rounded-2xl p-8 shadow-lg relative overflow-hidden">
+                <!-- Background decoration -->
+                <div class="absolute top-0 right-0 -mr-16 -mt-16 w-64 h-64 rounded-full bg-indigo-800 opacity-50"></div>
+                
+                <div class="relative z-10">
+                    <div class="flex flex-col md:flex-row justify-between items-start md:items-center mb-8">
+                        <div>
+                            <h3 class="text-2xl font-bold">Delhi Durbar, Dec 12, 1911</h3>
+                            <p class="text-indigo-200">Announced by King George V & Viceroy Lord Hardinge</p>
+                        </div>
+                        <div class="mt-4 md:mt-0 bg-white/10 px-4 py-2 rounded border border-white/20">
+                            <span class="font-bold text-orange-400">Result:</span> Partition Revoked
+                        </div>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-3 gap-6 text-indigo-100">
+                        <div class="bg-indigo-800/50 p-4 rounded-lg backdrop-blur-sm">
+                            <h4 class="font-bold text-white mb-2">1. Reunification</h4>
+                            <p class="text-sm">Bengal reunited based on language. Bihar and Orissa separated into a new province. Assam separated.</p>
+                        </div>
+                        <div class="bg-indigo-800/50 p-4 rounded-lg backdrop-blur-sm">
+                            <h4 class="font-bold text-white mb-2">2. Capital Shift</h4>
+                            <p class="text-sm">Capital moved from <strong>Calcutta to Delhi</strong>. A strategic move to punish Bengal and please Muslims (Mughal heritage).</p>
+                        </div>
+                        <div class="bg-indigo-800/50 p-4 rounded-lg backdrop-blur-sm">
+                            <h4 class="font-bold text-white mb-2">3. Reactions</h4>
+                            <p class="text-sm">Hindus celebrated victory. Muslim elite (Muslim League) felt betrayed by the British U-turn.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- EXAM SIMULATOR: Quiz -->
+        <section id="quiz" class="scroll-mt-24 pt-8 border-t border-gray-200">
+            <div class="bg-indigo-50 rounded-3xl p-8 md:p-12">
+                <div class="text-center mb-8">
+                    <span class="bg-indigo-600 text-white px-3 py-1 rounded-full text-xs font-bold tracking-wide uppercase">Practice Mode</span>
+                    <h2 class="text-3xl font-bold text-gray-900 mt-4">Exam Simulator</h2>
+                    <p class="text-gray-600">Test your knowledge with practice questions.</p>
+                </div>
+
+                <div id="quiz-container" class="max-w-2xl mx-auto space-y-6">
+                    <!-- Default Question 1 -->
+                    <div class="bg-white p-6 rounded-xl shadow-sm quiz-item">
+                        <h4 class="font-bold text-lg mb-4">1. What was the "Real Motive" identified by Nationalists?</h4>
+                        <div class="space-y-2">
+                            <button onclick="checkAnswer(this, true)" class="quiz-option w-full text-left p-3 rounded border border-gray-200 transition">A) "Divide and Rule" and to dethrone Calcutta</button>
+                            <button onclick="checkAnswer(this, false)" class="quiz-option w-full text-left p-3 rounded border border-gray-200 transition">B) To develop the Port of Chittagong</button>
+                            <button onclick="checkAnswer(this, false)" class="quiz-option w-full text-left p-3 rounded border border-gray-200 transition">C) To create a university in Dhaka</button>
+                        </div>
+                        <div class="feedback hidden mt-3 text-sm font-semibold"></div>
+                    </div>
+                </div>
+
+                <div class="mt-8 text-center">
+                    <button onclick="generateQuestion()" id="generate-btn" class="bg-gradient-to-r from-orange-500 to-red-500 text-white px-6 py-3 rounded-full font-bold shadow-lg hover:shadow-xl transition transform hover:scale-105 flex items-center justify-center mx-auto">
+                        <span>✨ Generate New Question</span>
+                    </button>
+                    <p id="generate-error" class="text-red-500 text-sm mt-2 hidden"></p>
+                </div>
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Chat Widget -->
+    <div class="chat-toggle" onclick="toggleChat()">
+        <svg xmlns="http://www.w3.org/2000/svg" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M8 10h.01M12 10h.01M16 10h.01M9 16H5a2 2 0 01-2-2V6a2 2 0 012-2h14a2 2 0 012 2v8a2 2 0 01-2 2h-5l-5 5v-5z" />
+        </svg>
+    </div>
+
+    <div class="chat-widget" id="chat-widget">
+        <div class="bg-indigo-600 text-white p-4 flex justify-between items-center">
+            <h3 class="font-bold">✨ AI History Tutor</h3>
+            <button onclick="toggleChat()" class="text-indigo-200 hover:text-white">&times;</button>
+        </div>
+        <div class="chat-messages" id="chat-messages">
+            <div class="message ai">
+                Hello! I'm your History Tutor. Ask me anything about the Partition of Bengal, Lord Curzon, or the Swadeshi Movement!
+            </div>
+        </div>
+        <div class="p-4 border-t border-gray-200">
+            <div class="flex gap-2">
+                <input type="text" id="chat-input" placeholder="Ask a question..." class="flex-1 border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-indigo-500" onkeypress="handleEnter(event)">
+                <button onclick="askTutor()" class="bg-indigo-600 text-white px-3 py-2 rounded-lg hover:bg-indigo-700">
+                    <svg xmlns="http://www.w3.org/2000/svg" class="h-4 w-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 19l9 2-9-18-9 18 9-2zm0 0v-8" />
+                    </svg>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- API Settings Modal -->
+    <div id="settings-modal" class="modal">
+        <div class="modal-content">
+            <div class="flex justify-between items-center mb-4">
+                <h3 class="text-xl font-bold text-gray-900">⚙️ AI Features Setup</h3>
+                <button onclick="closeSettings()" class="text-gray-500 hover:text-gray-700 text-2xl">&times;</button>
+            </div>
+            <p class="text-gray-600 mb-4 text-sm">
+                To use the AI Tutor and Infinite Quiz features on GitHub Pages, you need to provide your own Gemini API Key. It will be saved securely in your browser.
+            </p>
+            <div class="mb-4">
+                <label class="block text-gray-700 text-sm font-bold mb-2">Gemini API Key</label>
+                <input type="password" id="api-key-input" class="shadow appearance-none border rounded w-full py-2 px-3 text-gray-700 leading-tight focus:outline-none focus:shadow-outline" placeholder="Paste your API key here">
+            </div>
+            <div class="flex justify-end gap-2">
+                <a href="https://aistudio.google.com/app/apikey" target="_blank" class="text-indigo-600 hover:text-indigo-800 text-sm flex items-center mr-auto">
+                    Get a free key &rarr;
+                </a>
+                <button onclick="closeSettings()" class="bg-gray-300 hover:bg-gray-400 text-gray-800 font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">Cancel</button>
+                <button onclick="saveApiKey()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline">Save Key</button>
+            </div>
+        </div>
+    </div>
+
+    <footer class="bg-gray-900 text-gray-400 py-12 mt-12 text-center">
+        <p class="mb-4">Study Tool Created from "Bengal Partition Assignment.pdf"</p>
+        <p class="text-sm">Course: Indian History • Date: February 5, 2026</p>
+    </footer>
+
+    <script>
+        // --- API KEY MANAGEMENT ---
+        let userApiKey = localStorage.getItem('geminiApiKey') || "";
+        const envApiKey = ""; // This remains empty for static exports
+
+        function openSettings() {
+            document.getElementById('settings-modal').classList.add('show');
+            document.getElementById('api-key-input').value = userApiKey;
+        }
+
+        function closeSettings() {
+            document.getElementById('settings-modal').classList.remove('show');
+        }
+
+        function saveApiKey() {
+            const key = document.getElementById('api-key-input').value.trim();
+            if (key) {
+                localStorage.setItem('geminiApiKey', key);
+                userApiKey = key;
+                closeSettings();
+                alert("API Key saved! AI features are now ready.");
+            } else {
+                localStorage.removeItem('geminiApiKey');
+                userApiKey = "";
+                alert("API Key removed.");
+            }
+        }
+
+        // --- GEMINI API HELPER ---
+        async function callGemini(prompt) {
+            // Use environment key (Preview) or User Key (GitHub Pages)
+            const keyToUse = envApiKey || userApiKey;
+
+            if (!keyToUse) {
+                openSettings(); // Prompt user for key
+                return null;
+            }
+            try {
+                const response = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-preview-09-2025:generateContent?key=${keyToUse}`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        contents: [{ parts: [{ text: prompt }] }]
+                    })
+                });
+                
+                if (!response.ok) throw new Error('API call failed');
+                
+                const data = await response.json();
+                return data.candidates[0].content.parts[0].text;
+            } catch (error) {
+                console.error("Gemini API Error:", error);
+                if (!userApiKey) openSettings();
+                return null;
+            }
+        }
+
+        // --- AI TUTOR LOGIC ---
+        function toggleChat() {
+            const widget = document.getElementById('chat-widget');
+            const toggle = document.querySelector('.chat-toggle');
+            widget.classList.toggle('open');
+            if(widget.classList.contains('open')) {
+                toggle.style.transform = 'scale(0)';
+            } else {
+                toggle.style.transform = 'scale(1)';
+            }
+        }
+
+        function handleEnter(e) {
+            if (e.key === 'Enter') askTutor();
+        }
+
+        async function askTutor() {
+            const input = document.getElementById('chat-input');
+            const messages = document.getElementById('chat-messages');
+            const question = input.value.trim();
+            
+            if (!question) return;
+
+            // Add user message
+            messages.innerHTML += `<div class="message user">${question}</div>`;
+            input.value = '';
+            messages.scrollTop = messages.scrollHeight;
+
+            // Add loading indicator
+            const loadingId = 'loading-' + Date.now();
+            messages.innerHTML += `<div class="message ai" id="${loadingId}"><span class="typing-indicator"></span><span class="typing-indicator"></span><span class="typing-indicator"></span></div>`;
+            messages.scrollTop = messages.scrollHeight;
+
+            // Call API
+            const systemPrompt = "You are an expert history tutor specializing in Indian History, specifically the Partition of Bengal (1905). Answer student questions accurately, concisely (max 2-3 sentences), and engagingly. If asked about other topics, politely steer back to Bengal history.";
+            const responseText = await callGemini(systemPrompt + "\n\nStudent Question: " + question);
+
+            // Remove loading and add response
+            document.getElementById(loadingId).remove();
+            
+            if (responseText) {
+                // Parse simple markdown for bolding
+                const formattedText = responseText.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+                messages.innerHTML += `<div class="message ai">${formattedText}</div>`;
+            } else {
+                if (!userApiKey) {
+                     messages.innerHTML += `<div class="message ai text-red-500">Please set your API Key in Settings to use the AI Tutor.</div>`;
+                } else {
+                    messages.innerHTML += `<div class="message ai text-red-500">Sorry, I encountered an error. Please try again.</div>`;
+                }
+            }
+            messages.scrollTop = messages.scrollHeight;
+        }
+
+        // --- INFINITE QUIZ LOGIC ---
+        async function generateQuestion() {
+            const btn = document.getElementById('generate-btn');
+            const container = document.getElementById('quiz-container');
+            const errorMsg = document.getElementById('generate-error');
+            
+            // UI Loading State
+            const originalBtnText = btn.innerHTML;
+            btn.innerHTML = `<svg class="animate-spin h-5 w-5 mr-3 text-white" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg> Generating...`;
+            btn.disabled = true;
+            errorMsg.classList.add('hidden');
+
+            const prompt = `Generate a challenging multiple choice question about the Partition of Bengal 1905, Swadeshi Movement, or 1911 Annulment. Focus on specific dates, figures (Curzon, Tagore, Salimullah), or political outcomes. 
+            Return strictly JSON format with no markdown formatting: { "question": "...", "options": ["A)...", "B)...", "C)..."], "correctIndex": 0, "explanation": "..." }`;
+
+            const jsonString = await callGemini(prompt);
+            
+            try {
+                if (!jsonString) throw new Error("No response");
+                
+                // Clean markdown code blocks if present
+                const cleanJson = jsonString.replace(/```json/g, '').replace(/```/g, '').trim();
+                const qData = JSON.parse(cleanJson);
+                
+                const qId = Date.now();
+                const newQHtml = `
+                    <div class="bg-white p-6 rounded-xl shadow-sm quiz-item border-l-4 border-indigo-500 fade-in">
+                        <div class="flex justify-between items-start mb-4">
+                            <h4 class="font-bold text-lg pr-4">✨ ${qData.question}</h4>
+                            <span class="bg-indigo-100 text-indigo-800 text-xs px-2 py-1 rounded font-bold">AI Generated</span>
+                        </div>
+                        <div class="space-y-2">
+                            ${qData.options.map((opt, idx) => `
+                                <button onclick="checkGeneratedAnswer(this, ${idx === qData.correctIndex}, '${qData.explanation.replace(/'/g, "\\'")}')" class="quiz-option w-full text-left p-3 rounded border border-gray-200 transition">${opt}</button>
+                            `).join('')}
+                        </div>
+                        <div class="feedback hidden mt-3 text-sm font-semibold"></div>
+                    </div>
+                `;
+                
+                container.insertAdjacentHTML('beforeend', newQHtml);
+                
+                // Scroll to new question
+                container.lastElementChild.scrollIntoView({ behavior: 'smooth' });
+
+            } catch (e) {
+                console.error(e);
+                errorMsg.textContent = "Failed to generate. Ensure your API Key is set in Settings.";
+                errorMsg.classList.remove('hidden');
+                if (!userApiKey) openSettings();
+            } finally {
+                btn.innerHTML = originalBtnText;
+                btn.disabled = false;
+            }
+        }
+
+        function checkGeneratedAnswer(btn, isCorrect, explanation) {
+            const container = btn.parentElement.parentElement; // Go up to main card div
+            const buttons = container.querySelectorAll('button');
+            const feedback = container.querySelector('.feedback');
+            
+            buttons.forEach(b => {
+                b.disabled = true;
+                if (b === btn) {
+                    if (isCorrect) {
+                        b.classList.add('correct');
+                        feedback.innerHTML = `✅ Correct! <br><span class="font-normal text-gray-600 mt-1 block text-xs">${explanation}</span>`;
+                        feedback.classList.add('text-green-600');
+                    } else {
+                        b.classList.add('wrong');
+                        feedback.innerHTML = `❌ Incorrect. <br><span class="font-normal text-gray-600 mt-1 block text-xs">${explanation}</span>`;
+                        feedback.classList.add('text-red-600');
+                    }
+                } else if (b.getAttribute('onclick').includes('true')) {
+                    b.classList.add('correct', 'opacity-50');
+                }
+            });
+            feedback.classList.remove('hidden');
+        }
+
+        // --- EXISTING QUIZ LOGIC (Static Questions) ---
+        function checkAnswer(btn, isCorrect) {
+            const container = btn.parentElement;
+            const buttons = container.querySelectorAll('button');
+            const feedback = container.nextElementSibling;
+            
+            buttons.forEach(b => {
+                b.disabled = true;
+                if (b === btn) {
+                    if (isCorrect) {
+                        b.classList.add('correct');
+                        feedback.textContent = "✅ Correct!";
+                        feedback.classList.add('text-green-600');
+                    } else {
+                        b.classList.add('wrong');
+                        feedback.textContent = "❌ Incorrect. Check the Motives/Impact section.";
+                        feedback.classList.add('text-red-600');
+                    }
+                } else if (b.getAttribute('onclick').includes('true')) {
+                    b.classList.add('correct', 'opacity-50');
+                }
+            });
+            feedback.classList.remove('hidden');
+        }
+
+        // --- TAB LOGIC ---
+        function switchTab(tabName) {
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.remove('active'));
+            document.getElementById(`tab-${tabName}`).classList.add('active');
+            
+            document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById(`btn-${tabName}`).classList.add('active');
+        }
+
+        // --- CHART JS SETUP ---
+        const ctxProv = document.getElementById('provinceChart').getContext('2d');
+        new Chart(ctxProv, {
+            type: 'bar',
+            data: {
+                labels: ['West Bengal', 'East Bengal & Assam'],
+                datasets: [
+                    {
+                        label: 'Total Population (Millions)',
+                        data: [54, 31],
+                        backgroundColor: ['#F97316', '#10B981'], // Orange for West, Green for East
+                        borderWidth: 1
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false },
+                    tooltip: {
+                        callbacks: {
+                            afterLabel: function(context) {
+                                if (context.dataIndex === 0) return 'Hindu Majority (+ Hindi/Odia)';
+                                if (context.dataIndex === 1) return 'Muslim Majority (18M Muslims)';
+                            }
+                        }
+                    }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        title: { display: true, text: 'Population (Millions)' }
+                    }
+                }
+            }
+        });
+    </script>
+</body>
+</html>
